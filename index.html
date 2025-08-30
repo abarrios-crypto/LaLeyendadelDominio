@@ -604,10 +604,11 @@
             
             downloadBtn.addEventListener('click', () => {
                 soundManager.playClick();
-                const { jsPDF } = window.jspdf;
                 const certElement = document.getElementById('certificate');
                 const explanationElement = document.getElementById('explanation-page');
                 
+                // Temporarily disable animation for capture
+                certElement.classList.remove('animate__animated', 'animate__zoomIn');
                 downloadBtn.textContent = "Generando...";
                 downloadBtn.disabled = true;
 
@@ -617,62 +618,67 @@
                     useCORS: true,
                 };
                 
-                html2canvas(certElement, options).then(canvas1 => {
-                    html2canvas(explanationElement, options).then(canvas2 => {
-                        const imgData1 = canvas1.toDataURL('image/png');
-                        const imgData2 = canvas2.toDataURL('image/png');
-
-                        const pdf = new jsPDF({
-                            orientation: 'portrait',
-                            unit: 'pt',
-                            format: 'letter'
+                setTimeout(() => { // Allow UI to update before capturing
+                    html2canvas(certElement, options).then(canvas1 => {
+                        html2canvas(explanationElement, options).then(canvas2 => {
+                            certElement.classList.add('animate__animated', 'animate__zoomIn'); // Re-enable animation
+                            const imgData1 = canvas1.toDataURL('image/png');
+                            const imgData2 = canvas2.toDataURL('image/png');
+    
+                            const pdf = new jspdf.jsPDF({
+                                orientation: 'portrait',
+                                unit: 'pt',
+                                format: 'letter'
+                            });
+    
+                            const pdfWidth = pdf.internal.pageSize.getWidth();
+                            const pdfHeight = pdf.internal.pageSize.getHeight();
+                            
+                            // --- Page 1: Certificate ---
+                            const canvas1AR = canvas1.width / canvas1.height;
+                            let img1Width = pdfWidth - 40; // with margin
+                            let img1Height = img1Width / canvas1AR;
+                            if (img1Height > pdfHeight - 40) {
+                                img1Height = pdfHeight - 40;
+                                img1Width = img1Height * canvas1AR;
+                            }
+                            const x1 = (pdfWidth - img1Width) / 2;
+                            const y1 = (pdfHeight - img1Height) / 2;
+                            pdf.addImage(imgData1, 'PNG', x1, y1, img1Width, img1Height);
+    
+                            // --- Page 2: Explanation ---
+                            pdf.addPage('letter', 'portrait');
+                            const canvas2AR = canvas2.width / canvas2.height;
+                            let img2Width = pdfWidth - 40; // with margin
+                            let img2Height = img2Width / canvas2AR;
+                             if (img2Height > pdfHeight - 40) {
+                                img2Height = pdfHeight - 40;
+                                img2Width = img2Height * canvas2AR;
+                            }
+                            const x2 = (pdfWidth - img2Width) / 2;
+                            const y2 = (pdfHeight - img2Height) / 2;
+                            pdf.addImage(imgData2, 'PNG', x2, y2, img2Width, img2Height);
+                            
+                            pdf.save(`Certificado_Leyenda_${playerState.name.replace(/\s/g, '_')}.pdf`);
+                            
+                            downloadBtn.textContent = "Descargar PDF";
+                            downloadBtn.disabled = false;
+    
+                        }).catch(err => {
+                            console.error("Error generating page 2:", err);
+                            alert("Hubo un error al generar la segunda página del PDF.");
+                            downloadBtn.textContent = "Descargar PDF";
+                            downloadBtn.disabled = false;
+                            certElement.classList.add('animate__animated', 'animate__zoomIn');
                         });
-
-                        const pdfWidth = pdf.internal.pageSize.getWidth();
-                        const pdfHeight = pdf.internal.pageSize.getHeight();
-                        
-                        // --- Page 1: Certificate ---
-                        const canvas1AR = canvas1.width / canvas1.height;
-                        let img1Width = pdfWidth - 40; // with margin
-                        let img1Height = img1Width / canvas1AR;
-                        if (img1Height > pdfHeight - 40) {
-                            img1Height = pdfHeight - 40;
-                            img1Width = img1Height * canvas1AR;
-                        }
-                        const x1 = (pdfWidth - img1Width) / 2;
-                        const y1 = (pdfHeight - img1Height) / 2;
-                        pdf.addImage(imgData1, 'PNG', x1, y1, img1Width, img1Height);
-
-                        // --- Page 2: Explanation ---
-                        pdf.addPage('letter', 'portrait');
-                        const canvas2AR = canvas2.width / canvas2.height;
-                        let img2Width = pdfWidth - 40; // with margin
-                        let img2Height = img2Width / canvas2AR;
-                         if (img2Height > pdfHeight - 40) {
-                            img2Height = pdfHeight - 40;
-                            img2Width = img2Height * canvas2AR;
-                        }
-                        const x2 = (pdfWidth - img2Width) / 2;
-                        const y2 = (pdfHeight - img2Height) / 2;
-                        pdf.addImage(imgData2, 'PNG', x2, y2, img2Width, img2Height);
-                        
-                        pdf.save(`Certificado_Leyenda_${playerState.name.replace(/\s/g, '_')}.pdf`);
-                        
-                        downloadBtn.textContent = "Descargar PDF";
-                        downloadBtn.disabled = false;
-
                     }).catch(err => {
-                        console.error("Error generating page 2:", err);
-                        alert("Hubo un error al generar la segunda página del PDF.");
+                        console.error("Error generating page 1:", err);
+                        alert("Hubo un error al generar la primera página del PDF.");
                         downloadBtn.textContent = "Descargar PDF";
                         downloadBtn.disabled = false;
+                        certElement.classList.add('animate__animated', 'animate__zoomIn');
                     });
-                }).catch(err => {
-                    console.error("Error generating page 1:", err);
-                    alert("Hubo un error al generar la primera página del PDF.");
-                    downloadBtn.textContent = "Descargar PDF";
-                    downloadBtn.disabled = false;
-                });
+                }, 100);
             });
 
             init();
