@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Leyenda del Dominio Gamificado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" xintegrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoVBL5gI9kLmbG0CzdlJen4v/QVigA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        :root {
+            --cursor-sword: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 50 50" transform="rotate(45)"><path fill="silver" stroke="black" d="M23 0 L27 0 L27 30 L40 30 L40 35 L27 35 L27 50 L23 50 L23 35 L10 35 L10 30 L23 30 Z"/></svg>'), auto;
+            --cursor-fairy: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><radialGradient id="a"><stop offset="0%25" stop-color="white"/><stop offset="100%25" stop-color="cyan"/></radialGradient></defs><circle cx="16" cy="16" r="12" fill="cyan" fill-opacity="0.3"/><circle cx="16" cy="16" r="8" fill="url(%23a)" stroke="black" stroke-width="1"/></svg>'), auto;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F3E5AB; /* Parchment color */
+            background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+            cursor: var(--cursor-fairy);
+        }
+        .zelda-font {
+            font-family: 'Cinzel', serif;
+        }
+        .zelda-container {
+            background-color: #fefdf5; /* Light parchment */
+            border: 4px solid #6b4c3c; /* Wood border */
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        .zelda-btn {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            background-color: #2A7E4A; /* Zelda green */
+            color: white;
+            border-radius: 8px;
+            border-bottom: 4px solid #1A4D2E;
+            transition: all 0.1s ease-in-out;
+            cursor: var(--cursor-sword);
+        }
+        .zelda-btn:hover {
+            transform: translateY(-2px);
+            border-bottom-width: 6px;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 220, 0.7));
+        }
+        .zelda-btn:active {
+            transform: translateY(2px);
+            border-bottom-width: 2px;
+        }
+        .zelda-btn:disabled {
+            background-color: #a38b57;
+            border-bottom-color: #6b4c3c;
+            cursor: not-allowed;
+            transform: translateY(0);
+        }
+        .zelda-btn.intermediate { background-color: #2a5a7e; border-bottom-color: #1a3a4d; }
+        .zelda-btn.advanced { background-color: #7e2a2a; border-bottom-color: #4d1a1a; }
+
+        .choice-btn {
+            background-color: #fefdf5;
+            border: 2px solid #a38b57; /* Goldish border */
+            transition: all 0.2s ease-in-out;
+            color: #4A2E2C;
+            cursor: var(--cursor-sword);
+        }
+        .choice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-color: #D4AF37; /* Gold */
+            background-color: #fffef0;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 220, 0.7));
+        }
+        .progress-bar-bg { background-color: #4A2E2C; }
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #59A869, #A8E063);
+            transition: width 0.5s ease-in-out;
+        }
+        .badge { transition: transform 0.3s ease, filter 0.3s ease; }
+        .feedback-correct { background-color: #E6F5DD; border-left: 4px solid #2A7E4A; }
+        .feedback-incorrect { background-color: #FEE2E2; border-left: 4px solid #9B2C2C; }
+        .hidden { display: none; }
+        .zelda-input {
+            background-color: #fefdf5; border: 2px solid #a38b57; color: #4A2E2C; border-radius: 6px;
+        }
+        .zelda-input:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.4); }
+        .draggable-item { cursor: grab; background-color: #fffef0; border: 2px solid #a38b57; }
+        .draggable-item:hover { cursor: var(--cursor-sword); }
+        .drop-zone { background-color: #f3e5ab; border: 2px dashed #a38b57; min-height: 50px; }
+        .drop-zone.drag-over { background-color: #e2d39a; }
+        .drop-zone.correct { background-color: #E6F5DD; border-style: solid; border-color: #2A7E4A; }
+        .avatar-option {
+            border: 4px solid transparent;
+            transition: all 0.2s ease-in-out;
+            cursor: var(--cursor-sword);
+        }
+        .avatar-option.selected {
+            border-color: #D4AF37;
+            transform: scale(1.1);
+        }
+        .avatar-display {
+            width: 48px;
+            height: 48px;
+            background-color: #f3e5ab;
+            border: 2px solid #6b4c3c;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+        @keyframes score-jump {
+          0% { transform: scale(1); color: #E2B029; text-shadow: none; }
+          50% { transform: scale(1.4); color: #fff; text-shadow: 0 0 10px #fff; }
+          100% { transform: scale(1); color: #E2B029; text-shadow: none; }
+        }
+        .score-animated {
+          animation: score-jump 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-[#4A2E2C]">
+
+    <div id="game-container" class="w-full max-w-4xl mx-auto p-4 sm:p-6 min-h-screen flex flex-col justify-center">
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="text-center">
+            <h1 class="zelda-font text-4xl sm:text-5xl font-bold text-[#0A4F3D]">La Leyenda del Dominio</h1>
+            <p class="text-lg mt-4 max-w-2xl mx-auto">¡Te damos la bienvenida! Forja tu leyenda dominando el Ciclo del Aprendizaje. Tu <strong class="text-[#8c5a2b]">narrativa</strong> comienza ahora.</p>
+            <div class="zelda-container p-6 mt-6">
+                <div id="name-input-section">
+                    <h2 class="zelda-font text-xl font-semibold text-[#0A4F3D]">Tu Misión (El Despertar)</h2>
+                    <p class="mt-2">Supera desafíos ancestrales, acumula tesoros y desbloquea reliquias. Cada paso te acerca al dominio total. ¿Aceptas el desafío de grabar tu nombre en la historia?</p>
+                    <input id="player-name" type="text" placeholder="Escribe tu nombre" class="zelda-input w-full max-w-xs mt-6 p-2 text-center text-lg">
+                    <button id="next-to-avatar-btn" class="zelda-btn mt-8 px-8 py-3 text-xl">Siguiente</button>
+                </div>
+
+                <div id="avatar-selection-section" class="hidden">
+                    <h2 class="zelda-font text-xl font-semibold text-[#0A4F3D]">Elige tu Ávatar</h2>
+                    <p class="mt-2">Toda figura legendaria tiene una apariencia. ¿Cuál es la tuya?</p>
+                    <div id="avatar-options" class="mt-6 flex justify-center items-center gap-2 flex-wrap">
+                        <!-- Avatars will be injected by JS -->
+                    </div>
+                    <button id="next-to-difficulty-btn" class="zelda-btn mt-8 px-8 py-3 text-xl">Siguiente</button>
+                </div>
+
+                <div id="difficulty-selection-section" class="hidden">
+                    <h2 class="zelda-font text-xl font-semibold text-[#0A4F3D]">Elige tu Sendero</h2>
+                    <p class="mt-2">Cada sendero que completes te otorgará una reliquia única. Las reliquias son acumulables en tu leyenda, ¡intenta conseguirlas todas! Eres libre de forjar tu propio camino. ¿Qué desafío aceptas?</p>
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button class="zelda-btn p-4 text-lg" data-difficulty="basico">
+                            Modo Básico
+                            <span class="block text-xs font-normal mt-1">El inicio de la leyenda.</span>
+                        </button>
+                        <button class="zelda-btn intermediate p-4 text-lg" data-difficulty="intermedio">
+                            Modo Intermedio
+                             <span class="block text-xs font-normal mt-1">Nuevas pruebas te esperan.</span>
+                        </button>
+                        <button class="zelda-btn advanced p-4 text-lg" data-difficulty="avanzado">
+                            Modo Avanzado
+                             <span class="block text-xs font-normal mt-1">El desafío definitivo.</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Game Screen -->
+        <div id="main-game" class="hidden">
+            <header class="zelda-container p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div id="avatar-header-display" class="avatar-display"></div>
+                    <h2 class="zelda-font text-lg font-bold text-[#0A4F3D]" id="player-display">Leyenda</h2>
+                </div>
+                <div class="w-full sm:w-1/2">
+                    <h2 class="text-sm font-semibold text-slate-500 mb-1 text-center">PODER</h2>
+                    <div class="w-full progress-bar-bg rounded-full h-5 p-1"><div id="progress-bar" class="progress-bar-fill h-full rounded-full" style="width: 0%;"></div></div>
+                </div>
+                <div class="text-center"><h2 class="text-sm font-semibold text-slate-500">RUPIAS</h2><p id="score" class="text-2xl font-bold text-[#E2B029]">0</p></div>
+            </header>
+            <div id="scenario-container" class="zelda-container p-6">
+                <p id="scenario-category" class="zelda-font text-sm font-bold uppercase text-[#2A7E4A] mb-2"></p>
+                <p id="scenario-text" class="text-lg mb-6"></p>
+                <div id="choices-container" class="gap-4"></div>
+            </div>
+            <div id="feedback-container" class="mt-4 p-4 rounded-lg text-center hidden">
+                <p id="feedback-text"></p>
+                <button id="next-btn" class="zelda-btn mt-4 px-6 py-2">Siguiente</button>
+            </div>
+            <footer class="mt-6">
+                <h3 class="zelda-font text-center text-lg font-semibold text-[#0A4F3D] mb-3">RELIQUIAS OBTENIDAS (SESIÓN ACTUAL)</h3>
+                <div id="badges-container" class="flex justify-center flex-wrap gap-4 zelda-container p-4 min-h-[50px]"></div>
+            </footer>
+        </div>
+        
+        <!-- End Screen -->
+        <div id="end-screen" class="text-center hidden">
+            <div id="end-screen-content" class="zelda-container p-8 animate__animated animate__zoomIn">
+                <!-- Content will be injected by JS -->
+            </div>
+        </div>
+        
+        <!-- Certificate Screen -->
+        <div id="certificate-screen" class="hidden">
+            <div id="certificate" class="zelda-container p-8 animate__animated animate__zoomIn text-center">
+                 <h1 class="zelda-font text-3xl sm:text-4xl font-bold text-[#0A4F3D]">Certificado de Leyenda</h1>
+                 <p class="mt-4 text-lg">Se otorga este certificado a</p>
+                 <div class="flex justify-center items-center gap-4 my-4">
+                    <div id="cert-avatar-display" class="avatar-display"></div>
+                    <p id="cert-player-name" class="zelda-font text-4xl text-[#8c5a2b]"></p>
+                 </div>
+                 <p class="mt-2 text-lg">Por completar con éxito "La Leyenda del Dominio", demostrando un profundo conocimiento del Ciclo de Aprendizaje Gamificado.</p>
+                 <div class="my-6">
+                     <p class="font-bold text-xl">Tesoro Acumulado (Última Aventura): <span id="cert-score" class="text-[#E2B029]"></span> Rupias</p>
+                 </div>
+                 <h2 class="zelda-font text-xl font-semibold text-[#0A4F3D] mb-3">Reliquias Obtenidas</h2>
+                 <div id="cert-badges" class="flex justify-center flex-wrap gap-4 p-4"></div>
+                 <p class="text-xs text-slate-400 mt-6">Folio de Leyenda: <span id="cert-folio"></span></p>
+                 <div class="footer-text text-center text-xs text-slate-500 mt-4 pt-4 border-t-2 border-dashed border-[#a38b57]">
+                    © 2025 | Adriana A. Barrios Rodríguez | Diplomado en Gamificación en Entornos Digitales para la Docencia Universitaria |  UAS | SAU |  DGES | Todos los derechos reservados.
+                </div>
+            </div>
+            <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center no-print">
+                <button id="download-btn" class="zelda-btn px-6 py-3">Descargar PDF</button>
+                <button id="restart-from-cert-btn" class="zelda-btn px-6 py-3 bg-gray-600 border-b-gray-800">Jugar de Nuevo</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Explanation Page for PDF - Positioned off-screen -->
+    <div id="explanation-container" class="absolute left-[-9999px] top-0 w-[800px]">
+        <div id="explanation-page" class="zelda-container p-8 text-left text-sm">
+            <h1 class="zelda-font text-3xl font-bold text-[#0A4F3D] text-center">Pergamino de Sabiduría</h1>
+            <p class="text-center text-lg mt-2 mb-6">Desglosando la pedagogía detrás de "La Leyenda del Dominio".</p>
+            
+            <p class="text-justify mb-4">Esta aventura fue más que un juego; fue un viaje a través del <strong>aprendizaje experiencial</strong>. Este principio sostiene que el conocimiento se crea a través de la transformación de la experiencia. Como protagonista de esta leyenda, no solo leíste sobre conceptos, sino que los viviste: tomaste decisiones (experiencia concreta), viste las consecuencias inmediatas (observación reflexiva), entendiste el principio subyacente en la retroalimentación (conceptualización abstracta) y aplicaste ese conocimiento en el siguiente desafío (experimentación activa).</p>
+            
+            <h2 class="zelda-font text-lg font-semibold text-[#0A4F3D] mt-3">1. Principios y bases de metodologías activas</h2>
+            <p class="mt-1 text-justify">Tu misión se centró en ser protagonista. Las metodologías activas te colocan en el centro del aprendizaje.
+                <br>•   <strong>Aprendizaje Basado en Proyectos/Problemas (ABP):</strong> Misiones como "construir un puente" no eran simples preguntas, sino problemas complejos que requerían planificación y aplicación de conocimiento en un contexto realista. Esto fomenta el pensamiento crítico.
+                <br>•   <strong>Aula Invertida:</strong> El desafío del "Pergamino del Sabio" simuló este modelo. En lugar de recibir una lección pasiva, llegaste con un conocimiento previo para dedicar el tiempo valioso con el guía a la aplicación práctica.
+                <br>•   <strong>Aprendizaje Colaborativo:</strong> Desafíos como "Gremio" implicaban que el éxito no era individual, sino el resultado del trabajo en equipo, reflejando la importancia de la comunicación.</p>
+            
+            <h2 class="zelda-font text-lg font-semibold text-[#0A4F3D] mt-3">2. Relación entre metodologías activas y gamificación</h2>
+            <p class="mt-1 text-justify">Si las metodologías activas son el esqueleto de la experiencia de aprendizaje, la gamificación es el alma que le da vida.
+                <br>•   <strong>Motivación Intrínseca y Extrínseca:</strong> El ABP proporciona motivación intrínseca (la satisfacción de resolver el problema). La gamificación añade capas de motivación extrínseca (Rupias) e intrínseca (la narrativa, la autonomía).
+                <br>•   <strong>Retroalimentación Inmediata:</strong> En un proyecto tradicional, el feedback puede tardar. En tu leyenda, el "susurro del espíritu" o las rupias te daban feedback instantáneo, un pilar de la gamificación que acelera el aprendizaje.</p>
+
+            <h2 class="zelda-font text-lg font-semibold text-[#0A4F3D] mt-3">3. El porqué de las preguntas: Ciclo y Elementos</h2>
+            <p class="mt-1 text-justify">Cada pregunta fue diseñada para que experimentaras una parte del ciclo de aprendizaje gamificado.
+                <br>•   <strong>Fases:</strong> Las preguntas sobre "El Despertar" (Onboarding) te hicieron pensar en la importancia de una buena introducción. Los desafíos de "Las Pruebas" (Andamiaje) te enfrentaron a la dificultad progresiva. La "Batalla Final" (Endgame) te demostró la necesidad de una evaluación que consolide todo lo aprendido.
+                <br>•   <strong>Elementos:</strong> Las preguntas sobre "Rupias" (Puntos) y "Reliquias" (Insignias) te hicieron valorar los sistemas de recompensa. Los escenarios sobre la "Cueva Opcional" (Autonomía) y el "Susurro del Espíritu" (Retroalimentación) te permitieron experimentar cómo la libertad y la guía constante son cruciales.
+                <br>•   <strong>Roles:</strong> Al interactuar con "El Sabio" (Facilitador), comprendiste que el rol del guía no es dar respuestas, sino hacer las preguntas correctas para que la leyenda descubra el camino.</p>
+                
+            <div class="footer-text text-center text-xs text-slate-500 mt-6 pt-3 border-t-2 border-dashed border-[#a38b57]">
+                © 2025 | Adriana A. Barrios Rodríguez | Diplomado en Gamificación en Entornos Digitales para la Docencia Universitaria |  UAS | SAU |  DGES | Todos los derechos reservados.
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const allQuestData = {
+                basico: [
+                    { category: 'Fase: El Despertar (Onboarding)', scenario: 'Estás forjando una nueva aventura. Para empezar, ¿qué es lo MÁS importante que debes mostrar a quienes inician la aventura?', choices: [{ text: 'Un guardián invencible.', correct: false }, { text: 'La leyenda, las reglas del reino y el objetivo final.', correct: true }], feedback_correct: '¡Correcto! Una buena introducción sumerge a quien juega y traza el camino. ¡Ganas 100 rupias!', feedback_incorrect: 'No tan rápido. Un enemigo imposible puede causar frustración al inicio. Una leyenda clara es mejor.', points: 100 },
+                    { category: 'Elemento: Rupias (Puntos)', scenario: 'Alguien derrota a un enemigo. ¿Cómo le das una recompensa inmediata y tangible?', choices: [{ text: 'Otorgándole un puñado de rupias.', correct: true }, { text: 'Diciéndole que espere al final de la aventura.', correct: false }], feedback_correct: '¡Exacto! Las rupias son una excelente forma de recompensa instantánea. ¡Ganas 100 rupias!', feedback_incorrect: 'La inmediatez es clave. Esperar demasiado rompe el ritmo de la aventura.', points: 100 },
+                    { type: 'matching', category: 'Prueba de Sabiduría Básica', scenario: 'Conecta los artefactos de la leyenda con su verdadero nombre en el Ciclo del Aprendizaje.', points: 200, matches: [ { gamified: 'Rupias', real: 'Puntos' }, { gamified: 'El Despertar', real: 'Onboarding' }, { gamified: 'El Sabio', real: 'Facilitador y Guía' }] }
+                ],
+                intermedio: [
+                    { category: 'Fase: Las Pruebas (Andamiaje)', scenario: 'Has superado el primer calabozo. ¿Cuál es el siguiente paso lógico en tu viaje?', choices: [{ text: 'Un calabozo más complejo con nuevos acertijos.', correct: true }, { text: 'Repetir el mismo calabozo fácil.', correct: false }], feedback_correct: '¡Así se hace! Las pruebas deben crecer con tu habilidad. ¡Ganas 150 rupias!', feedback_incorrect: 'Repetir lo fácil lleva al aburrimiento. Toda leyenda busca nuevos desafíos.', points: 150 },
+                    { category: 'Prueba Ancestral: Metodologías Activas', scenario: 'Un grupo de aventureros y aventureras debe diseñar y construir un puente para cruzar un cañón. ¿Qué sabiduría antigua están aplicando al resolver un problema real de forma colaborativa?', choices: [{ text: 'El Pergamino de la Repetición.', correct: false }, { text: 'La Senda del Aprendizaje Basado en Proyectos.', correct: true }], feedback_correct: '¡Correcto! El Aprendizaje Basado en Proyectos une a las leyendas para resolver grandes desafíos. ¡Ganas 150 rupias!', feedback_incorrect: 'La repetición no construye puentes. La acción y colaboración sí.', points: 150 },
+                    { category: 'Prueba Ancestral: Metodologías Activas', scenario: 'El Sabio te entrega un pergamino para que lo estudies antes de vuestro encuentro. Durante la lección, os dedicáis a resolver acertijos complejos. ¿Qué método de enseñanza es este?', choices: [{ text: 'El Aula Invertida de los Sabios.', correct: true }, { text: 'La Lección Magistral.', correct: false }], feedback_correct: '¡Exacto! El conocimiento previo permite que el tiempo juntos sea para las pruebas más difíciles. ¡Ganas 150 rupias!', feedback_incorrect: 'Una lección magistral es escuchar. La leyenda debe actuar.', points: 150 },
+                    { type: 'matching', category: 'Prueba de Sabiduría Intermedia', scenario: 'El conocimiento ancestral se une a la leyenda. Conecta los conceptos.', points: 250, matches: [ { gamified: 'Las Pruebas', real: 'Andamiaje (Scaffolding)' }, { gamified: 'Misión del Puente', real: 'Aprendizaje Basado en Proyectos' }, { gamified: 'Pergamino del Sabio', real: 'Aula Invertida' } ] }
+                ],
+                avanzado: [
+                    { category: 'Elemento: Reliquias (Insignias)', scenario: 'Tras superar las pruebas de un templo, ¿cómo reconoces visualmente esta gran hazaña?', choices: [{ text: 'Con una reliquia sagrada, como el "Ojo de la Verdad".', correct: true }, { text: 'Con más rupias, igual que al vencer enemigos menores.', correct: false }], feedback_correct: '¡Perfecto! Las reliquias son ideales para marcar hazañas memorables y coleccionables. ¡Ganas 200 rupias!', feedback_incorrect: 'Aunque las rupias son buenas, una reliquia otorga un estatus de leyenda.', points: 200 },
+                    { category: 'Elemento: Retroalimentación (Feedback)', scenario: 'Al fallar un acertijo, un espíritu te susurra: "La sombra se proyecta opuesta a la luz". ¿Qué elemento crucial del aprendizaje se está manifestando?', choices: [{ text: 'Un castigo por el error.', correct: false }, { text: 'Retroalimentación inmediata y constructiva.', correct: true }], feedback_correct: '¡Tu percepción es aguda! La retroalimentación es un regalo que nos guía, no un castigo. ¡Ganas 200 rupias!', feedback_incorrect: 'Un error no es un final, sino una oportunidad para aprender. La guía es clave.', points: 200 },
+                    { category: 'El Nexo Legendario', scenario: 'Al construir el puente (Aprendizaje Basado en Proyectos), se otorgan "Insignias de Ingeniería" por cada sección completada. ¿Qué efecto tiene esto en la misión?', choices: [{ text: 'Complica la misión innecesariamente.', correct: false }, { text: 'Aumenta la motivación y el compromiso con el proyecto.', correct: true }], feedback_correct: '¡Precisamente! Las insignias (gamificación) potencian el sentimiento de logro en el proyecto. ¡Ganas 200 rupias!', feedback_incorrect: 'Lejos de complicar, las recompensas dan propósito a cada paso de la misión.', points: 200 },
+                    { category: 'Elemento: Agencia', scenario: 'Se te presenta la opción de seguir la misión principal o explorar una cueva misteriosa en busca de un tesoro opcional. ¿Qué principio de la gamificación se respeta al darte esta libertad?', choices: [{ text: 'La libertad de elección y autonomía.', correct: true }, { text: 'La linealidad forzada de la historia.', correct: false }], feedback_correct: '¡Correcto! Permitir que la leyenda tome sus propias decisiones (agencia) aumenta inmensamente la inmersión y el compromiso. ¡Ganas 200 rupias!', feedback_incorrect: 'Un camino único es una orden. Una elección es una aventura.', points: 200 },
+                    { category: 'Fase: La Batalla Final (Endgame)', scenario: 'Has reunido todos los artefactos. ¿Cómo demuestras tu dominio total de tus habilidades?', choices: [{ text: 'Con una batalla épica final que requiera usar todo lo aprendido.', correct: true }, { text: 'Con un enemigo simple de la primera zona.', correct: false }], feedback_correct: '¡Genial! La batalla final es la prueba definitiva, un reto que consolida toda la aventura. ¡Ganas 250 rupias!', feedback_incorrect: 'Un enemigo simple no es digno de una leyenda. ¡El reto final debe ser épico!', points: 250 },
+                    { type: 'matching', category: 'Prueba de Sabiduría Avanzada', scenario: 'Has llegado al final. Demuestra tu dominio total conectando todos los elementos de la leyenda.', points: 350, matches: [ { gamified: 'Reliquias', real: 'Insignias y Logros' }, { gamified: 'La Batalla Final', real: 'Endgame (Evaluación Sumativa)' }, { gamified: 'Insignia + Puente', real: 'Gamificación + ABP' }, { gamified: 'Protagonista de la Aventura', real: 'Aprendizaje Centrado en la Persona' }, { gamified: 'Cueva Opcional', real: 'Autonomía y Elección' }, { gamified: 'Gremio', real: 'Aprendizaje Colaborativo' }, { gamified: 'Mapa del Mundo', real: 'Progreso Visible' }, { gamified: 'Susurro del Espíritu', real: 'Retroalimentación Constructiva' } ] }
+                ]
+            };
+            const relics = { 
+                basico: { name: 'Trifuerza del Conocimiento', icon: '△' },
+                intermedio: { name: 'Espada Maestra', icon: '⚔️' },
+                avanzado: { name: 'Gema Espiritual', icon: '💎' },
+            };
+            const avatars = {
+                'Ranger': '🏹', 'Mage': '🔮', 'Knight': '🛡️', 'Bard': '🎵', 
+                'Sage': '🦉', 'Guardian': '🦁', 'Scout': '🦅', 'Mystic': '🐺'
+            };
+            
+            // --- Persistent State Object ---
+            let playerState = {
+                name: 'Leyenda',
+                avatar: '🏹',
+                completedDifficulties: new Set()
+            };
+
+            // --- Game Variables (reset every playthrough) ---
+            let currentQuest = [];
+            let currentStep = 0;
+            let score = 0;
+            let selectedDifficulty = '';
+            
+            const startScreen = document.getElementById('start-screen'), mainGame = document.getElementById('main-game'), endScreen = document.getElementById('end-screen'), certificateScreen = document.getElementById('certificate-screen');
+            const nameInputSection = document.getElementById('name-input-section'), avatarSelectionSection = document.getElementById('avatar-selection-section'), difficultySelectionSection = document.getElementById('difficulty-selection-section');
+            const nextToAvatarBtn = document.getElementById('next-to-avatar-btn'), nextToDifficultyBtn = document.getElementById('next-to-difficulty-btn');
+            const avatarOptionsContainer = document.getElementById('avatar-options');
+            const difficultyButtons = document.querySelectorAll('[data-difficulty]');
+            const nextBtn = document.getElementById('next-btn'), downloadBtn = document.getElementById('download-btn'), restartFromCertBtn = document.getElementById('restart-from-cert-btn');
+            const playerNameInput = document.getElementById('player-name'), playerDisplay = document.getElementById('player-display'), certPlayerName = document.getElementById('cert-player-name');
+            const avatarHeaderDisplay = document.getElementById('avatar-header-display'), certAvatarDisplay = document.getElementById('cert-avatar-display');
+            const progressBar = document.getElementById('progress-bar'), scoreDisplay = document.getElementById('score'), certScore = document.getElementById('cert-score');
+            const scenarioCategory = document.getElementById('scenario-category'), scenarioText = document.getElementById('scenario-text'), choicesContainer = document.getElementById('choices-container'), feedbackContainer = document.getElementById('feedback-container'), feedbackText = document.getElementById('feedback-text'), badgesContainer = document.getElementById('badges-container'), certBadges = document.getElementById('cert-badges');
+            const certFolio = document.getElementById('cert-folio');
+            const endScreenContent = document.getElementById('end-screen-content');
+            
+            const soundManager = {
+                isReady: false,
+                synth: null,
+                init() {
+                    document.body.addEventListener('click', async () => {
+                        if (this.isReady || Tone.context.state === 'running') return;
+                        await Tone.start();
+                        this.synth = new Tone.Synth().toDestination();
+                        this.isReady = true;
+                    }, { once: true });
+                },
+                playClick() { if (this.isReady) this.synth.triggerAttackRelease("C4", "8n", Tone.now()); },
+                playRupee() { if (this.isReady) this.synth.triggerAttackRelease("G5", "16n", Tone.now()); },
+                playError() { if (this.isReady) this.synth.triggerAttackRelease("C3", "8n", Tone.now()); },
+                playSecret() {
+                    if (!this.isReady) return;
+                    const now = Tone.now();
+                    this.synth.triggerAttackRelease("G4", "8n", now + 0.01);
+                    this.synth.triggerAttackRelease("A4", "8n", now + 0.2);
+                    this.synth.triggerAttackRelease("B4", "8n", now + 0.4);
+                    this.synth.triggerAttackRelease("C5", "4n", now + 0.6);
+                }
+            };
+            
+            function init() {
+                soundManager.init();
+                // Populate avatars
+                Object.entries(avatars).forEach(([name, icon]) => {
+                    const avatarEl = document.createElement('div');
+                    avatarEl.className = 'avatar-option p-1 rounded-full';
+                    avatarEl.innerHTML = `<div class="w-16 h-16 text-4xl flex items-center justify-center bg-[#f3e5ab] rounded-full" title="${name}">${icon}</div>`;
+                    avatarEl.dataset.avatar = icon;
+                    avatarEl.addEventListener('click', () => selectAvatar(avatarEl, icon));
+                    avatarOptionsContainer.appendChild(avatarEl);
+                });
+                // Select first avatar by default
+                if (avatarOptionsContainer.firstElementChild) {
+                    selectAvatar(avatarOptionsContainer.firstElementChild, avatarOptionsContainer.firstElementChild.dataset.avatar);
+                }
+            }
+
+            function selectAvatar(selectedElement, avatarIcon) {
+                soundManager.playClick();
+                playerState.avatar = avatarIcon;
+                document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+                selectedElement.classList.add('selected');
+            }
+
+            function shuffle(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
+
+            function setupGame(difficulty) {
+                soundManager.playClick();
+                // Reset per-game variables
+                selectedDifficulty = difficulty;
+                currentQuest = allQuestData[difficulty] ? [...allQuestData[difficulty]] : [];
+                currentStep = 0;
+                score = 0;
+
+                startScreen.classList.add('hidden'); mainGame.classList.remove('hidden');
+                mainGame.classList.add('animate__animated', 'animate__fadeIn');
+                
+                loadStep(currentStep);
+                updateUI();
+                renderSessionRelics();
+            }
+
+            function loadStep(stepIndex) {
+                feedbackContainer.classList.add('hidden');
+                const step = currentQuest[stepIndex];
+                scenarioCategory.textContent = step.category;
+                scenarioText.textContent = step.scenario;
+                choicesContainer.innerHTML = '';
+                if (step.type === 'matching') loadMatchingStep(step); else loadChoiceStep(step);
+            }
+
+            function loadChoiceStep(step) {
+                choicesContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+                step.choices.forEach(choice => {
+                    const button = document.createElement('button');
+                    button.innerHTML = `<span>${choice.text}</span>`;
+                    button.className = 'choice-btn w-full text-left p-4 rounded-lg';
+                    button.onclick = () => {
+                        handleChoice(choice.correct, step);
+                    };
+                    choicesContainer.appendChild(button);
+                });
+            }
+            
+            function handleChoice(isCorrect, step) {
+                choicesContainer.querySelectorAll('button, .draggable-item').forEach(el => {
+                    if (el.tagName === 'BUTTON') el.disabled = true;
+                    else if(el.draggable) el.draggable = false;
+                });
+                let feedback = '';
+                if (isCorrect) {
+                    soundManager.playRupee();
+                    score += step.points;
+                    const scoreDisplayEl = document.getElementById('score');
+                    scoreDisplayEl.classList.add('score-animated');
+                    setTimeout(() => scoreDisplayEl.classList.remove('score-animated'), 500);
+                    feedback = `${step.feedback_correct || '¡Correcto!'}`;
+                    feedbackContainer.className = 'mt-4 p-4 rounded-lg feedback-correct animate__animated animate__fadeInUp';
+                } else {
+                    soundManager.playError();
+                    feedback = `${step.feedback_incorrect || 'Respuesta incorrecta.'}`;
+                    feedbackContainer.className = 'mt-4 p-4 rounded-lg feedback-incorrect animate__animated animate__shakeX';
+                }
+                feedbackText.textContent = feedback;
+                feedbackContainer.classList.remove('hidden');
+                updateUI();
+            }
+
+            function loadMatchingStep(step) {
+                choicesContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-6 mt-4';
+                const gamifiedTerms = shuffle([...step.matches]);
+                const realTerms = shuffle([...step.matches]);
+                let correctMatches = 0;
+
+                const gamifiedCol = document.createElement('div');
+                gamifiedCol.innerHTML = `<h3 class="zelda-font text-center text-lg font-semibold text-[#0A4F3D] mb-3">Términos de la Leyenda</h3>`;
+                const realCol = document.createElement('div');
+                realCol.innerHTML = `<h3 class="zelda-font text-center text-lg font-semibold text-[#0A4F3D] mb-3">Conceptos del Ciclo</h3>`;
+
+                gamifiedTerms.forEach(term => {
+                    const el = document.createElement('div');
+                    el.id = term.gamified.replace(/\s/g, ''); el.textContent = term.gamified;
+                    el.className = 'draggable-item p-3 rounded-lg text-center'; el.draggable = true; el.dataset.match = term.real;
+                    el.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', e.target.id));
+                    gamifiedCol.appendChild(el);
+                });
+                realTerms.forEach(term => {
+                    const el = document.createElement('div');
+                    el.className = 'drop-zone p-3 rounded-lg flex items-center justify-center'; el.dataset.match = term.real; el.innerHTML = `<span class="pointer-events-none">${term.real}</span>`;
+                    el.addEventListener('dragover', e => { e.preventDefault(); e.target.classList.add('drag-over'); });
+                    el.addEventListener('dragleave', e => e.target.classList.remove('drag-over'));
+                    el.addEventListener('drop', e => {
+                        e.preventDefault(); e.target.classList.remove('drag-over');
+                        const droppedId = e.dataTransfer.getData('text/plain'); const draggableEl = document.getElementById(droppedId);
+                        if (draggableEl && draggableEl.dataset.match === e.target.dataset.match) {
+                            soundManager.playRupee();
+                            e.target.innerHTML = ''; e.target.appendChild(draggableEl);
+                            e.target.classList.add('correct'); draggableEl.draggable = false; draggableEl.style.cursor = 'default';
+                            correctMatches++;
+                            if (correctMatches === step.matches.length) {
+                                score += step.points;
+                                feedbackContainer.className = 'mt-4 p-4 rounded-lg feedback-correct animate__animated animate__fadeInUp';
+                                feedbackText.textContent = '¡Tu sabiduría es tan grande como tu valor! Has descifrado los secretos. ¡Ganas ' + step.points + ' rupias!';
+                                feedbackContainer.classList.remove('hidden');
+                                updateUI();
+                            }
+                        }
+                    });
+                    realCol.appendChild(el);
+                });
+                choicesContainer.appendChild(gamifiedCol); choicesContainer.appendChild(realCol);
+            }
+
+            function nextStep() {
+                soundManager.playClick();
+                currentStep++;
+                if (currentStep < currentQuest.length) { 
+                    loadStep(currentStep); 
+                    updateUI();
+                } else { 
+                    progressBar.style.width = '100%';
+                    endGame(); 
+                }
+            }
+            
+            function updateUI() {
+                playerDisplay.textContent = playerState.name; 
+                avatarHeaderDisplay.textContent = playerState.avatar;
+                scoreDisplay.textContent = score;
+                const progress = currentQuest.length > 0 ? (currentStep / currentQuest.length) * 100 : 0;
+                progressBar.style.width = `${progress}%`;
+            }
+            
+            function renderSessionRelics(container = badgesContainer) {
+                container.innerHTML = '';
+                if (playerState.completedDifficulties.size === 0) {
+                     container.innerHTML = '<p class="text-xs text-slate-400">Completa un sendero para ganar tu primera reliquia.</p>';
+                } else {
+                    playerState.completedDifficulties.forEach(difficulty => {
+                        const relic = relics[difficulty];
+                        if (relic) {
+                            const badgeEl = document.createElement('div');
+                            badgeEl.className = `badge text-center p-2 rounded-lg`;
+                            badgeEl.innerHTML = `<div class="text-4xl" title="${relic.name}">${relic.icon}</div><div class="text-xs font-semibold mt-1">${relic.name}</div>`;
+                            container.appendChild(badgeEl);
+                        }
+                    });
+                }
+            }
+
+
+            function endGame() {
+                const isNewRelic = !playerState.completedDifficulties.has(selectedDifficulty);
+                if (isNewRelic) {
+                    soundManager.playSecret();
+                }
+                playerState.completedDifficulties.add(selectedDifficulty);
+                
+                mainGame.classList.add('hidden');
+                endScreen.classList.remove('hidden');
+                
+                let endHTML = '';
+                if(selectedDifficulty === 'avanzado'){
+                    endHTML = `
+                        <div class="text-6xl mb-4">🏆</div>
+                        <h1 class="zelda-font text-3xl sm:text-4xl font-bold text-[#0A4F3D]">¡Leyenda Cumplida!</h1>
+                        <p class="text-lg mt-4">¡Felicidades, <span class="font-bold">${playerState.name}</span>! Has superado la prueba final y demostrado tu dominio del Ciclo.</p>
+                        <div class="mt-6 text-2xl font-bold">Tesoro Final: <span class="text-[#E2B029]">${score}</span> Rupias</div>
+                        <p class="mt-2 text-slate-500">¡Tu hazaña será cantada por generaciones!</p>
+                        <div class="flex flex-col sm:flex-row justify-center gap-4">
+                            <button id="view-cert-btn-dynamic" class="zelda-btn mt-8 px-8 py-3">Ver Certificado</button>
+                            <button id="restart-btn-dynamic" class="zelda-btn mt-8 px-8 py-3 bg-gray-600 border-b-gray-800">Forjar una Nueva Leyenda</button>
+                        </div>
+                    `;
+                } else {
+                     endHTML = `
+                        <div class="text-6xl mb-4">🏅</div>
+                        <h1 class="zelda-font text-3xl sm:text-4xl font-bold text-[#0A4F3D]">¡Prueba Superada!</h1>
+                        <p class="text-lg mt-4">¡Bien hecho, <span class="font-bold">${playerState.name}</span>! Has demostrado gran valor y sabiduría.</p>
+                        <div class="mt-6 text-2xl font-bold">Tesoro Final: <span class="text-[#E2B029]">${score}</span> Rupias</div>
+                        <p class="mt-4 text-slate-600 bg-amber-100 p-3 rounded-md border border-amber-300">Has ganado la reliquia de este sendero. La mayor recompensa, el <strong>Certificado de Leyenda</strong>, espera al final del <strong>Modo Avanzado</strong>.</p>
+                        <div class="flex flex-col sm:flex-row justify-center gap-4">
+                            <button id="restart-btn-dynamic" class="zelda-btn mt-8 px-8 py-3 bg-gray-600 border-b-gray-800">Forjar una Nueva Leyenda</button>
+                        </div>
+                    `;
+                }
+                endScreenContent.innerHTML = endHTML;
+                const restartBtn = document.getElementById('restart-btn-dynamic');
+                if(restartBtn) restartBtn.addEventListener('click', () => { soundManager.playClick(); restartGame(); });
+                const viewCertBtn = document.getElementById('view-cert-btn-dynamic');
+                if(viewCertBtn) viewCertBtn.addEventListener('click', () => { soundManager.playClick(); showCertificate(); });
+            }
+
+            function showCertificate() {
+                endScreen.classList.add('hidden');
+                certificateScreen.classList.remove('hidden');
+                
+                certPlayerName.textContent = playerState.name;
+                certAvatarDisplay.textContent = playerState.avatar;
+                certScore.textContent = score;
+                certFolio.textContent = `LEGEND-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                
+                renderSessionRelics(certBadges);
+            }
+            
+            function restartGame() {
+                certificateScreen.classList.add('hidden');
+                endScreen.classList.add('hidden');
+                startScreen.classList.remove('hidden');
+                nameInputSection.classList.add('hidden');
+                avatarSelectionSection.classList.add('hidden');
+                difficultySelectionSection.classList.remove('hidden');
+            }
+            
+            nextToAvatarBtn.addEventListener('click', () => {
+                soundManager.playClick();
+                playerState.name = playerNameInput.value.trim() || 'Leyenda';
+                nameInputSection.classList.add('hidden');
+                avatarSelectionSection.classList.remove('hidden');
+            });
+
+            nextToDifficultyBtn.addEventListener('click', () => {
+                soundManager.playClick();
+                avatarSelectionSection.classList.add('hidden');
+                difficultySelectionSection.classList.remove('hidden');
+            });
+
+            difficultyButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const difficulty = e.currentTarget.dataset.difficulty;
+                    setupGame(difficulty);
+                });
+            });
+
+            nextBtn.addEventListener('click', nextStep);
+            restartFromCertBtn.addEventListener('click', () => { soundManager.playClick(); restartGame(); });
+            
+            downloadBtn.addEventListener('click', () => {
+                soundManager.playClick();
+                const { jsPDF } = window.jspdf;
+                const certElement = document.getElementById('certificate');
+                const explanationElement = document.getElementById('explanation-page');
+                
+                downloadBtn.textContent = "Generando...";
+                downloadBtn.disabled = true;
+
+                const options = { 
+                    backgroundColor: "#fefdf5",
+                    scale: 2,
+                    useCORS: true,
+                };
+                
+                html2canvas(certElement, options).then(canvas1 => {
+                    html2canvas(explanationElement, options).then(canvas2 => {
+                        const imgData1 = canvas1.toDataURL('image/png');
+                        const imgData2 = canvas2.toDataURL('image/png');
+
+                        const pdf = new jsPDF({
+                            orientation: 'portrait',
+                            unit: 'pt',
+                            format: 'letter'
+                        });
+
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = pdf.internal.pageSize.getHeight();
+                        
+                        // --- Page 1: Certificate ---
+                        const canvas1AR = canvas1.width / canvas1.height;
+                        let img1Width = pdfWidth - 40; // with margin
+                        let img1Height = img1Width / canvas1AR;
+                        if (img1Height > pdfHeight - 40) {
+                            img1Height = pdfHeight - 40;
+                            img1Width = img1Height * canvas1AR;
+                        }
+                        const x1 = (pdfWidth - img1Width) / 2;
+                        const y1 = (pdfHeight - img1Height) / 2;
+                        pdf.addImage(imgData1, 'PNG', x1, y1, img1Width, img1Height);
+
+                        // --- Page 2: Explanation ---
+                        pdf.addPage('letter', 'portrait');
+                        const canvas2AR = canvas2.width / canvas2.height;
+                        let img2Width = pdfWidth - 40; // with margin
+                        let img2Height = img2Width / canvas2AR;
+                         if (img2Height > pdfHeight - 40) {
+                            img2Height = pdfHeight - 40;
+                            img2Width = img2Height * canvas2AR;
+                        }
+                        const x2 = (pdfWidth - img2Width) / 2;
+                        const y2 = (pdfHeight - img2Height) / 2;
+                        pdf.addImage(imgData2, 'PNG', x2, y2, img2Width, img2Height);
+                        
+                        pdf.save(`Certificado_Leyenda_${playerState.name.replace(/\s/g, '_')}.pdf`);
+                        
+                        downloadBtn.textContent = "Descargar PDF";
+                        downloadBtn.disabled = false;
+
+                    }).catch(err => {
+                        console.error("Error generating page 2:", err);
+                        alert("Hubo un error al generar la segunda página del PDF.");
+                        downloadBtn.textContent = "Descargar PDF";
+                        downloadBtn.disabled = false;
+                    });
+                }).catch(err => {
+                    console.error("Error generating page 1:", err);
+                    alert("Hubo un error al generar la primera página del PDF.");
+                    downloadBtn.textContent = "Descargar PDF";
+                    downloadBtn.disabled = false;
+                });
+            });
+
+            init();
+        });
+    </script>
+</body>
+</html>
+
